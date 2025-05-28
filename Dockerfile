@@ -43,27 +43,25 @@ WORKDIR /var/www/html
 # Copy application files
 COPY . .
 
-# Remove cached bootstrap files (optional but safe)
+# Remove cached bootstrap files
 RUN rm -rf bootstrap/cache/*.php
+
+# Copy .env file if it exists
+COPY --chown=www-data:www-data .env.example .env
 
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-scripts
 
-# Install Filament if not already included in composer.json
+# Install Filament (if not already required in composer.json)
 RUN composer require filament/filament:"^3.0" --no-interaction --no-scripts
 
-# Fix ownership and permissions
+
 RUN chown -R www-data:www-data storage bootstrap/cache public \
     && chmod -R 775 storage bootstrap/cache public
-
 # Expose port 80
 EXPOSE 80
-
-# Run Laravel setup commands on container start
+# Link storage and fix permissions
 CMD mkdir -p storage/app/public && \
-    php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache && \
     php artisan migrate --force && \
     php artisan db:seed --force && \
     php artisan storage:link && \
